@@ -1061,7 +1061,9 @@ class System_Daemon
 
         // Make use of a PEAR_Log() instance
         if (self::opt('usePEARLogInstance') !== false) {
-            self::opt('usePEARLogInstance')->log($str . $log_tail, $level);
+            self::opt('usePEARLogInstance')->log(
+                'System', 'Daemon', $str . $log_tail, $level
+            );
             return true;
         }
 

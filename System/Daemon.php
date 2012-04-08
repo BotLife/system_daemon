@@ -189,6 +189,13 @@ class System_Daemon
             'detail' => 'This will replace System_Daemon\'s own logging facility',
             'required' => true,
         ),
+        'useCustomLogHandler' => array(
+            'type' => 'boolean|object',
+            'default' => false,
+            'punch' => 'Accepts any callable method to handle all logging',
+            'detail' => 'This will replace System_Daemon\'s own logging facility',
+            'required' => true,
+        ),
 
         'authorName' => array(
             'type' => 'string/0-50',
@@ -1066,6 +1073,14 @@ class System_Daemon
             );
             return true;
         }
+        if (false !== ($cb = self::opt('useCustomLogHandler'))) {
+            if (!is_callable($cb)) {
+                throw new System_Daemon_Exception('Your "useCustomLogHandler" ' .
+                    ' is not callable');
+            }
+            call_user_func($cb, $str . $log_tail, $level);
+            return true;
+        }
 
         // Save resources if arguments are passed.
         // But by falling back to debug_backtrace() it still works
@@ -1289,6 +1304,8 @@ class System_Daemon
     {
         if (self::opt('usePEARLogInstance')) {
             $logLoc = '(PEAR Log)';
+        } else if (self::opt('useCustomLogHandler')) {
+            $logLoc = '(Custom log handler)';
         } else {
             $logLoc = self::opt('logLocation');
         }
@@ -1484,6 +1501,10 @@ class System_Daemon
         // We have to change owner in case of identity change.
         // This way we can modify the files even after we're not root anymore
         foreach ($chownFiles as $filePath) {
+            if (!file_exists($filePath)) {
+                continue;
+            }
+            
             // Change File GID
             $doGid = (filegroup($filePath) != $gid ? $gid : false);
             if (false !== $doGid && !@chgrp($filePath, intval($gid))) {
